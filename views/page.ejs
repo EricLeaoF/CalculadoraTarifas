@@ -90,33 +90,30 @@
         url: "/calculateRate",
         data: $("#form_calculate").serialize(),
         success: function(response) {
-          if(response.result){
-            if(response.result.error){
-              $("#myModal").modal("show");
-              $(".modal-body").html("<p style='color:red;'>Tarifa não encontrada.</p>");
+          if(response.result.error){
+            $("#myModal").modal("show");
+            $(".modal-body").html("<p style='color:red;'>Tarifa não encontrada.</p>");
+          } else {
+            let valorComPlano = response.result.valorComPlano;
+            let valorSemPlano = response.result.valorSemPlano;
+            let informativo;
+            let maiorValor = Math.max(valorComPlano, valorSemPlano);
+            let cor = maiorValor == valorComPlano ? "red" : "green";
+            let menorValor = Math.min(valorComPlano, valorSemPlano);
+            let corMenor = menorValor == valorSemPlano ? "green" : "red";
+            if(valorComPlano < valorSemPlano){
+              let economia = (valorSemPlano - valorComPlano).toFixed(2);
+              informativo = `<p>Economia com o plano FaleMais${response.plano}: <span style='color:green;'>$${economia}</span></p>`
             } else {
-              let valorComPlano = response.result.valorComPlano;
-              let valorSemPlano = response.result.valorSemPlano;
-              let informativo;
-              let maiorValor = Math.max(valorComPlano, valorSemPlano);
-              let cor = maiorValor == valorComPlano ? "red" : "green";
-              let menorValor = Math.min(valorComPlano, valorSemPlano);
-              let corMenor = menorValor == valorSemPlano ? "green" : "red";
-              if(valorComPlano < valorSemPlano){
-                let economia = (valorSemPlano - valorComPlano).toFixed(2);
-                informativo = `<p>Economia com o plano FaleMais${response.plano}: <span style='color:green;'>$${economia}</span></p>`
-              } else {
-                informativo = '<p>Neste caso, a melhor opção é a não utilização do plano.</p>'
-              }
-
-              $("#myModal").modal("show");
-              $(".modal-body").html(`
-                <p>Valor com o plano: <span style='color:${cor};'>$${valorComPlano}</span></p>
-                <p>Valor sem o plano: <span style='color:${corMenor};'>$${valorSemPlano}</span></p>
-                ${informativo}`
-              );
+              informativo = '<p>Neste caso, a melhor opção é a não utilização do plano.</p>'
             }
-          } 
+            $("#myModal").modal("show");
+            $(".modal-body").html(`
+              <p>Valor com o plano: <span style='color:${cor};'>$${valorComPlano}</span></p>
+              <p>Valor sem o plano: <span style='color:${corMenor};'>$${valorSemPlano}</span></p>
+              ${informativo}`
+            );
+          }
         },
         error: function(response) {
           let responseJson = response.responseJSON
