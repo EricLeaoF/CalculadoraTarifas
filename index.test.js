@@ -34,6 +34,4 @@ describe('Test my app server', () => {
         expect(res.statusCode).toEqual(200);
         expect(res._body).toHaveProperty('result');
     })
-
-    
 })
