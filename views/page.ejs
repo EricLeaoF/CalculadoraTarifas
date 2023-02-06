@@ -101,7 +101,7 @@
             let cor = maiorValor == valorComPlano ? "red" : "green";
             let menorValor = Math.min(valorComPlano, valorSemPlano);
             let corMenor = menorValor == valorSemPlano ? "green" : "red";
-            if(valorComPlano < valorSemPlano){
+            if(Number(valorComPlano) < Number(valorSemPlano)){
               let economia = (valorSemPlano - valorComPlano).toFixed(2);
               informativo = `<p>Economia com o plano FaleMais${response.plano}: <span style='color:green;'>$${economia}</span></p>`
             } else {
