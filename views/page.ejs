@@ -1,0 +1,184 @@
+<% if (typeof origem === 'undefined') { var origem = ''; } %>
+<% if (typeof destino === 'undefined') { var destino = ''; } %>
+<% if (typeof tempo_ligacao === 'undefined') { var tempo_ligacao = ''; } %>
+<% if (typeof plano === 'undefined') { var plano = ''; } %>
+
+<%- include ("partials/header"); %>
+<body>
+    <%- include ("partials/navbar"); %>
+      <div class="modal fade" id="myModal" role="dialog">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Resultado</h4>
+              </div>
+              <div class="modal-body">
+              </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <br>
+    <div class="container">
+        <div class="card" id="formulario-calculo">
+            <div class="card-header">
+                <h3>Calculadora de Tarifas de Ligação</h3> 
+            </div>
+            <div class="card-body">
+                <form id="form_calculate">
+                    <div class="form-group">
+                      <label for="from">DDD de Origem:</label>
+                      <select id="origem" class="form-control" name="origem" required>
+                        <option value="">Selecione uma opção</option>
+                        <option value="011">011</option>
+                        <option value="016">016</option>
+                        <option value="017">017</option>
+                        <option value="018">018</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="to">DDD de Destino:</label>
+                      <select id="destino" class="form-control" name="destino" required>
+                        <option value="">Selecione uma opção</option>
+                        <option value="011">011</option>
+                        <option value="016">016</option>
+                        <option value="017">017</option>
+                        <option value="018">018</option>
+                      </select>
+                    </div>
+
+                    <div id="errorDdd" hidden>
+                      <p style="color: red;">O valor do campo DDD de Origem não pode ser igual ao DDD de Destino.</p>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="time">Tempo da ligação (em minutos):</label>
+                      <input type="number" id="tempo_ligacao" min="0" max="999" class="form-control" name="tempo_ligacao" value="<%= tempo_ligacao %>" required>
+                    </div>
+
+                    <div id="errorTime" hidden>
+                      <p style="color: red;">O valor campo Tempo da ligação deve ser igual ou menor a 999</p>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="plan">Plano FaleMais:</label>
+                      <select id="plano" class="form-control" name="plano" required>
+                        <option value="">Selecione um plano</option>
+                        <option value="30">FaleMais 30</option>
+                        <option value="60">FaleMais 60</option>
+                        <option value="120">FaleMais 120</option>
+                      </select>
+                    </div>
+
+                    <input type="submit" value="Calcular" class="btn btn-primary" id="enviar">
+                    <button class="btn btn-danger" id="limpar">Limpar</button> 
+                </form>            
+                <div id="errorMessage" hidden>
+                  <p style="color: red;">Por favor, preencha todos os campos obrigatórios.</p>
+                </div>
+            </div>    
+        </div>
+    </div>
+</body>
+<%- include ("partials/footer"); %>
+
+<script>
+  $(document).ready(function() {
+    $("#form_calculate").submit(function(event) {
+        event.preventDefault();
+        $("#errorMessage, #errorDdd, #errorTime").attr("hidden", true);
+        $.ajax({
+        type: "POST",
+        url: "/calculateRate",
+        data: $("#form_calculate").serialize(),
+        success: function(response) {
+          if(response.result){
+            if(response.result.error){
+              $("#myModal").modal("show");
+              $(".modal-body").html("<p style='color:red;'>Tarifa não encontrada.</p>");
+            } else {
+              let valorComPlano = response.result.valorComPlano;
+              let valorSemPlano = response.result.valorSemPlano;
+              let informativo;
+              let maiorValor = Math.max(valorComPlano, valorSemPlano);
+              let cor = maiorValor == valorComPlano ? "red" : "green";
+              let menorValor = Math.min(valorComPlano, valorSemPlano);
+              let corMenor = menorValor == valorSemPlano ? "green" : "red";
+              if(valorComPlano < valorSemPlano){
+                let economia = (valorSemPlano - valorComPlano).toFixed(2);
+                informativo = `<p>Economia com o plano FaleMais${response.plano}: <span style='color:green;'>$${economia}</span></p>`
+              } else {
+                informativo = '<p>Neste caso, a melhor opção é a não utilização do plano.</p>'
+              }
+
+              $("#myModal").modal("show");
+              $(".modal-body").html(`
+                <p>Valor com o plano: <span style='color:${cor};'>$${valorComPlano}</span></p>
+                <p>Valor sem o plano: <span style='color:${corMenor};'>$${valorSemPlano}</span></p>
+                ${informativo}`
+              );
+            }
+          } 
+        },
+        error: function(response) {
+          let responseJson = response.responseJSON
+          if(responseJson.code == 1001){
+            $("#errorMessage").removeAttr("hidden");
+          } else if(responseJson.code == 1002){
+            $("#errorDdd").removeAttr("hidden");
+          } else if(responseJson.code == 1003){
+            $("#errorTime").removeAttr("hidden");
+          } 
+        }
+      });
+    });
+
+    $("#limpar").click(function(event) {
+        event.preventDefault();
+        $("form")[0].reset();
+    });
+
+    $('.container').css('opacity', 1);
+    $('nav').css('opacity', 1).css('transform', 'translateY(0)');
+    $('footer').css('opacity', 1).css('transform', 'translateY(0)');
+  });
+</script>
+
+<style>
+  .navbar {
+    background-color: #FF8B00;
+  }
+  .card {
+    border: 1px solid #FF8B00;
+  }
+  .modal-content {
+    background-color: #fff;
+    padding: 1em;
+    border-radius: 5px;
+    box-shadow: 0px 2px 10px rgba(0,0,0,0.25);
+  }
+  body {
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    opacity: 0;
+    transition: opacity 1s;
+  }
+  nav,footer {
+    opacity: 0;
+    transform: translateY(-50px);
+    transition: all 0.5s; 
+  }
+  main {
+    min-height: calc(100vh - 50px);
+    padding-bottom: 500px; 
+  }
+</style>
+
+
+
